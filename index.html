@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tworzenie notatek audiowizualnych z AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-light: #12385f;
+            --bg-medium: #0e6fa6;
+            --bg-dark: #074983;
+            --accent-orange: #d15124;
+            --text-light: #f5f5dc; /* Kremowy */
+            --text-dark: #074983;
+            --blue-accent: #074983;
+            --purple-accent: #6a0dad;
+            --pink-accent: #e75480;
+            --title-color: #F5CBED; /* Nowy kolor dla tytułów podstron */
+        }
+
+        body {
+            font-family: 'Lato', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(180deg, var(--bg-light) 0%, var(--bg-medium) 50%, var(--bg-dark) 100%);
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+        
+        #pdf-export-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 30px;
+            background-color: var(--accent-orange);
+            color: var(--text-light);
+            border: none;
+            border-radius: 50px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, background-color 0.3s ease;
+            z-index: 1000;
+        }
+
+        #pdf-export-button:hover {
+            background-color: #a6401c;
+            transform: scale(1.05);
+        }
+        
+        #pdf-export-button.hidden {
+            display: none;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: none; /* Ukryj wszystkie sekcje domyślnie */
+        }
+        
+        .container.active {
+            display: block; /* Pokaż aktywną sekcję */
+        }
+
+        /* Menu nawigacyjne */
+        .menu-bar {
+            width: 100%;
+            background-color: rgba(7, 73, 131, 0.8);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .menu-item {
+            padding: 15px 25px;
+            cursor: pointer;
+            text-decoration: none;
+            color: var(--text-light);
+            font-weight: bold;
+            transition: background-color 0.3s, color 0.3s;
+            text-transform: uppercase;
+        }
+
+        .menu-item:hover, .menu-item.active {
+            background-color: var(--accent-orange);
+            color: white;
+        }
+
+        /* Styl głównej strony */
+        .hero-section {
+            text-align: center;
+            padding-top: 20vh; /* Przeniesienie treści wyżej */
+            min-height: calc(100vh - 80px); /* 80px na menu */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; /* Wyrównanie do góry */
+            align-items: center;
+        }
+
+        .hero-title {
+            font-family: 'Lato', sans-serif;
+            font-size: 4em;
+            font-weight: 900;
+            margin-bottom: 20px;
+            text-align: center;
+            white-space: nowrap; /* Tytuł w jednej linii */
+        }
+        
+        .hero-subtitle {
+            font-size: 1.5em;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .learn-more-btn {
+            padding: 15px 40px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--text-light);
+            background-color: var(--accent-orange);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
+            margin-top: 20px; /* Dodatkowa przerwa przed przyciskiem */
+        }
+
+        .learn-more-btn:hover {
+            background-color: #a6401c;
+            transform: scale(1.05);
+        }
+
+        /* Ogólne style dla sekcji */
+        h1, h2, h3 {
+            font-weight: bold;
+            text-align: center; /* Wyśrodkowanie wszystkich nagłówków */
+        }
+
+        h2 {
+            font-size: 2.5em;
+            margin-top: 50px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            color: var(--title-color); /* Zmiana koloru tytułów na podstronach */
+        }
+
+        .card {
+            background-color: rgba(7, 73, 131, 0.7);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(5px);
+        }
+        
+        .card h3 {
+            font-size: 1.8em;
+            color: var(--pink-accent);
+            margin-top: 0;
+            border-bottom: 2px solid var(--pink-accent);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        /* Akordeony */
+        .accordion {
+            background-color: rgba(14, 111, 166, 0.8);
+            color: var(--text-light);
+            cursor: pointer;
+            padding: 18px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 1.5em;
+            transition: 0.4s;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .accordion:hover {
+            background-color: rgba(14, 111, 166, 1);
+        }
+
+        .accordion.active {
+            background-color: var(--accent-orange);
+        }
+
+        .panel {
+            padding: 0 18px;
+            background-color: rgba(14, 111, 166, 0.5);
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease-out;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .panel p {
+            padding: 15px 0;
+        }
+        
+        /* Sticky notes */
+        .sticky-notes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            justify-content: center;
+            margin: 40px 0;
+        }
+
+        .sticky-note {
+            background-color: #fce883; /* Żółty kolor notatki */
+            color: var(--text-dark);
+            padding: 25px;
+            border-radius: 5px;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.2);
+            transform: rotate(2deg);
+            transition: transform 0.2s ease-in-out;
+            position: relative;
+        }
+        
+        .sticky-note::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            width: 30px;
+            height: 30px;
+            background-color: #fce883;
+            border-radius: 50%;
+            box-shadow: inset 0 2px 2px rgba(0,0,0,0.1);
+        }
+
+        .sticky-note:nth-child(even) {
+            transform: rotate(-2deg);
+        }
+
+        .sticky-note:hover {
+            transform: scale(1.05) rotate(0deg);
+            z-index: 10;
+        }
+        
+        .sticky-note p {
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        /* Lista linków */
+        .links-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .links-list li {
+            background-color: rgba(14, 111, 166, 0.8);
+            border-left: 5px solid var(--accent-orange);
+            margin-bottom: 15px;
+            padding: 20px;
+            border-radius: 8px;
+            transition: background-color 0.3s;
+        }
+
+        .links-list li:hover {
+            background-color: rgba(14, 111, 166, 1);
+        }
+
+        .links-list a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        
+        .links-list p {
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+
+        /* Quiz */
+        .quiz-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: rgba(7, 73, 131, 0.7);
+            border-radius: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .quiz-question {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .quiz-options {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .quiz-option {
+            background-color: rgba(14, 111, 166, 0.8);
+            color: var(--text-light);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+        
+        .quiz-option:hover {
+            background-color: rgba(14, 111, 166, 1);
+            transform: translateX(5px);
+        }
+        
+        .quiz-option.selected {
+            border: 2px solid var(--accent-orange);
+        }
+
+        .quiz-option.correct {
+            background-color: #4CAF50; /* Zielony dla poprawnej odpowiedzi */
+            border: 2px solid #4CAF50;
+        }
+
+        .quiz-option.incorrect {
+            background-color: #f44336; /* Czerwony dla błędnej odpowiedzi */
+            border: 2px solid #f44336;
+        }
+        
+        .quiz-navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        .quiz-navigation button, .check-quiz-btn {
+            padding: 10px 20px;
+            background-color: var(--accent-orange);
+            color: var(--text-light);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        
+        .quiz-navigation button:disabled, .check-quiz-btn:disabled {
+            background-color: #888;
+            cursor: not-allowed;
+        }
+        
+        .quiz-result {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 1.5em;
+        }
+
+        .quiz-result img {
+            max-width: 200px;
+            margin: 20px 0;
+            border-radius: 10px;
+        }
+
+        .reset-quiz-btn {
+            padding: 10px 20px;
+            background-color: var(--purple-accent);
+            color: var(--text-light);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+        }
+        
+        .reset-quiz-btn:hover {
+            background-color: #551a8b;
+        }
+        
+        .hidden {
+            display: none;
+        }
+
+        /* Najczęstsze błędy */
+        .errors-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .error-item {
+            background-color: rgba(7, 73, 131, 0.7);
+            border-left: 5px solid #f44336;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .error-item h4 {
+            color: #f44336;
+            margin-top: 0;
+            font-size: 1.4em;
+        }
+
+        .error-item p {
+            margin-bottom: 0;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="menu-bar">
+    <a class="menu-item active" data-section="home">Strona główna</a>
+    <a class="menu-item" data-section="key-concepts">Kluczowe pojęcia</a>
+    <a class="menu-item" data-section="examples">Przykłady</a>
+    <a class="menu-item" data-section="to-remember">Do zapamiętania</a>
+    <a class="menu-item" data-section="common-errors">Najczęstsze błędy</a>
+    <a class="menu-item" data-section="more-knowledge">Więcej wiedzy</a>
+    <a class="menu-item" data-section="quiz">Quiz</a>
+</div>
+
+<div id="home" class="container active">
+    <div class="hero-section">
+        <h1 class="hero-title">Tworzenie notatek audiowizualnych z AI</h1>
+        <p class="hero-subtitle">Jak wykorzystać sztuczną inteligencję do tworzenia profesjonalnych filmów i grafik, nawet bez dużego budżetu.</p>
+        <button class="learn-more-btn" onclick="showSection('key-concepts')">Chcę wiedzieć więcej</button>
+    </div>
+</div>
+
+<div id="key-concepts" class="container">
+    <div class="card">
+        <h2>Kluczowe pojęcia</h2>
+        <button class="accordion">Grafika generowana przez AI</button>
+        <div class="panel">
+            <p><strong>Definicja:</strong> Proces tworzenia obrazów i grafik z wykorzystaniem algorytmów sztucznej inteligencji. Użytkownik wprowadza tekstowy opis, a AI przekształca go w wizualny obraz. Jest to potężne narzędzie, które pozwala na szybkie generowanie unikalnych grafik bez konieczności posiadania zaawansowanych umiejętności graficznych. Zamiast rysować, malować czy projektować w programach graficznych, po prostu opisujemy to, co chcemy uzyskać, a AI generuje obraz za nas.</p>
+        </div>
+        
+        <button class="accordion">Prompt</button>
+        <div class="panel">
+            <p><strong>Definicja:</strong> Tekstowe polecenie lub instrukcja, którą podajemy sztucznej inteligencji, aby wygenerowała pożądany obraz, tekst czy film. Prompt to serce komunikacji z AI; jego jakość, precyzja i szczegółowość bezpośrednio wpływają na jakość i zgodność z intencją wyniku. Dobry prompt powinien zawierać nie tylko to, co ma być na obrazie, ale także styl, atmosferę, kolory i inne szczegóły. Na przykład, zamiast "pies", lepszym promptem będzie "realistyczne zdjęcie uśmiechniętego golden retrievera, siedzącego na plaży o zachodzie słońca, styl malarski, wysoka rozdzielczość".</p>
+        </div>
+        
+        <button class="accordion">"Good design is good business"</button>
+        <div class="panel">
+            <p><strong>Definicja:</strong> Słynne powiedzenie Thomasa Watsona, które podkreśla, że **dobry design** nie jest jedynie kwestią estetyki, ale kluczowym elementem strategii biznesowej. Oznacza to, że produkty, usługi i materiały marketingowe, które są dobrze zaprojektowane (intuicyjne, przejrzyste, atrakcyjne), przekładają się na konkretne korzyści: zwiększone zaufanie klientów, lepsze doświadczenia użytkownika i ostatecznie wyższe zyski. W świecie pełnym konkurencji, wyróżniający się i funkcjonalny design może stanowić przewagę rynkową.</p>
+        </div>
+        
+        <button class="accordion">Narzędzia do tworzenia wideo z AI</button>
+        <div class="panel">
+            <p><strong>Definicja:</strong> Oprogramowanie, które wykorzystuje sztuczną inteligencję do generowania, edytowania i ulepszania materiałów wideo. Narzędzia te potrafią automatyzować procesy, które wcześniej wymagały godzin pracy człowieka, takie jak generowanie animacji z tekstu, dodawanie lektorów (synteza mowy), tworzenie scenariuszy czy montowanie krótkich klipów w całość. Pozwalają one osobom bez specjalistycznych umiejętności i drogiego sprzętu na produkcję wysokiej jakości treści audiowizualnych.</p>
+        </div>
+    </div>
+</div>
+
+<div id="examples" class="container">
+    <div class="card">
+        <h2>Przykłady</h2>
+        
+        <h3>Przykład 1: Film promocyjny dla restauracji</h3>
+        <p>W materiale kursowym przedstawiono przykład stworzenia 30-sekundowego filmu promocyjnego dla fikcyjnej restauracji "Nadmorska" w Polsce. Wykorzystano do tego celu sztuczną inteligencję. Zamiast zatrudniać kosztowną ekipę filmową, profesjonalnych aktorów i kucharzy, użyto narzędzi AI, aby wygenerować realistyczne obrazy i wideo, które prezentują smaczne dania i atrakcyjny klimat. Cały proces zajął zaledwie kilka godzin i nie wiązał się z dużymi kosztami. Finalny film, choć stworzony przez AI, ma jakość pozwalającą na wykorzystanie go w mediach społecznościowych, aby zachęcić klientów do odwiedzenia restauracji.</p>
+        
+        <h3>Przykład 2: Zastosowanie AI w różnych biznesach</h3>
+        <p>Przedstawiony w materiale przykład pokazuje, że technologia AI do tworzenia materiałów audiowizualnych jest wysoce dostępna i wartościowa dla każdego rodzaju biznesu, nie tylko dla dużych korporacji. Podobne krótkie reklamy i filmy promocyjne mogą tworzyć małe przedsiębiorstwa, takie jak **kawiarnie, piekarnie, czy kwiaciarnie**. Użycie AI pozwala im opowiedzieć swoją historię w angażujący sposób, bez konieczności ponoszenia ogromnych wydatków. W ten sposób nawet niewielkie firmy mogą konkurować na rynku, mając dostęp do profesjonalnie wyglądających materiałów marketingowych.</p>
+        
+        <h3>Przykład 3: Rola designu</h3>
+        <p>Aby zilustrować znaczenie dobrego designu, lektor posługuje się prostą analogią. Wyobraź sobie dwa sklepy internetowe. Pierwszy ma **chaotyczny i nieczytelny interfejs**, trudną nawigację, a zdjęcia produktów są niskiej jakości. Drugi sklep jest **przejrzysty i intuicyjny**, a design budzi zaufanie. W którym z nich chętniej zrobisz zakupy? Oczywiście w tym drugim. Dobre projektowanie skraca czas podjęcia decyzji zakupowej i sprawia, że całe doświadczenie jest pozytywne, co przekłada się na lojalność klienta i sprzedaż. To pokazuje, że design jest strategicznym narzędziem biznesowym, a nie tylko ozdobą.</p>
+    </div>
+</div>
+
+<div id="to-remember" class="container">
+    <h2>Do zapamiętania</h2>
+    <div class="sticky-notes-grid">
+        <div class="sticky-note">
+            <p>Obraz generowany przez AI jest bezpośrednim przełożeniem promptu. Im bardziej szczegółowy i precyzyjny prompt, tym lepszy i bardziej zgodny z intencją wynik.</p>
+        </div>
+        <div class="sticky-note">
+            <p>Dobre projektowanie (design) to kluczowy element strategii biznesowej, a nie tylko estetyka. Buduje zaufanie i ułatwia interakcję z klientem.</p>
+        </div>
+        <div class="sticky-note">
+            <p>Narzędzia AI demokratyzują proces tworzenia materiałów audiowizualnych. Pozwalają na produkcję profesjonalnych treści bez dużego budżetu i specjalistycznych umiejętności.</p>
+        </div>
+        <div class="sticky-note">
+            <p>Thomas Watson: "Good design is good business". Pamiętaj, że wartościowy design to taki, który przynosi konkretne korzyści biznesowe i poprawia doświadczenie użytkownika.</p>
+        </div>
+        <div class="sticky-note">
+            <p>Tworzenie krótkich, angażujących filmów z wykorzystaniem AI jest dostępne dla każdego przedsiębiorcy, niezależnie od wielkości firmy. To sposób na opowiedzenie swojej historii w sieci.</p>
+        </div>
+        <div class="sticky-note">
+            <p>Do montażu filmów AI nie potrzebujesz drogich programów. Wiele darmowych narzędzi lub nawet aplikacji na telefon pozwala na swobodne połączenie wygenerowanych przez AI klipów w jedną całość.</p>
+        </div>
+    </div>
+</div>
+
+<div id="common-errors" class="container">
+    <div class="card">
+        <h2>Najczęstsze błędy</h2>
+        <ul class="errors-list">
+            <li class="error-item">
+                <h4>Niedokładne prompty</h4>
+                <p>Używanie zbyt ogólnych i prostych poleceń, np. "dom", zamiast "realistyczne zdjęcie nowoczesnego domu w stylu minimalistycznym, otoczonego bujną zielenią, oświetlonego ciepłym światłem zachodzącego słońca". Brak precyzji prowadzi do generowania obrazów, które nie spełniają naszych oczekiwań.</p>
+            </li>
+            <li class="error-item">
+                <h4>Ignorowanie znaczenia designu</h4>
+                <p>Skupianie się wyłącznie na treści, a pomijanie estetyki i przejrzystości. Tworzenie wizualnych materiałów, które są chaotyczne, mają niską jakość lub są trudne do odbioru. Taki brak uwagi na design może zaszkodzić wiarygodności marki, nawet jeśli sama treść jest wartościowa.</p>
+            </li>
+            <li class="error-item">
+                <h4>Używanie zbyt wielu narzędzi bez synergii</h4>
+                <p>Generowanie obrazów, tekstu i wideo w różnych, niekompatybilnych ze sobą narzędziach, co utrudnia późniejszy montaż i spójność projektu. Ważne jest, aby wybierać narzędzia, które mogą ze sobą współpracować lub znaleźć takie, które oferują kompleksowe rozwiązania, a później zmontować całość w jednym programie.</p>
+            </li>
+            <li class="error-item">
+                <h4>Traktowanie AI jako magicznej różdżki</h4>
+                <p>Zakładanie, że AI wykona całą pracę za nas, bez naszego wkładu i myślenia. Pamiętaj, że AI jest narzędziem, a nie twórcą. Nadal to Ty jesteś odpowiedzialny za koncepcję, historię i strategię, a sztuczna inteligencja pomaga Ci ją zrealizować w sposób szybszy i bardziej efektywny.</p>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<div id="more-knowledge" class="container">
+    <div class="card">
+        <h2>Więcej wiedzy</h2>
+        <ul class="links-list">
+            <li>
+                <a href="https://openai.com/dall-e-3" target="_blank">DALL-E 3 by OpenAI</a>
+                <p>Oficjalna strona popularnego generatora obrazów DALL-E 3 od firmy OpenAI. Znajdziesz tu galerię przykładów, informacje o możliwościach narzędzia oraz opcje dostępu. Strona jest doskonałym źródłem do poznania potencjału AI w tworzeniu grafiki.</p>
+            </li>
+            <li>
+                <a href="https://www.midjourney.com/" target="_blank">Midjourney</a>
+                <p>Strona jednego z najbardziej zaawansowanych generatorów obrazów AI. Midjourney jest znane z tworzenia artystycznych i estetycznie wyjątkowych grafik. To idealne miejsce, aby zobaczyć, jak wyszukane wizje artystyczne można zrealizować za pomocą AI.</p>
+            </li>
+            <li>
+                <a href="https://www.adobe.com/sensei/generative-ai/firefly.html" target="_blank">Adobe Firefly</a>
+                <p>Przegląd Adobe Firefly, czyli rodziny kreatywnych modeli generatywnej AI od firmy Adobe. Firefly jest zintegrowany z wieloma popularnymi programami, takimi jak Photoshop czy Illustrator, co umożliwia twórcom łatwe włączanie generatywnej sztucznej inteligencji do swoich projektów.</p>
+            </li>
+            <li>
+                <a href="https://aithority.com/ai-info/the-importance-of-design-in-ai/" target="_blank">The Importance of Design in AI</a>
+                <p>Artykuł w języku angielskim, który dogłębnie analizuje, dlaczego dobry design jest kluczowy nie tylko dla tradycyjnych produktów, ale także dla interfejsów i doświadczeń użytkowników w świecie sztucznej inteligencji.</p>
+            </li>
+            <li>
+                <a href="https://www.canva.com/ai-image-generator/" target="_blank">Canva AI Image Generator</a>
+                <p>Prosty i intuicyjny generator obrazów, idealny dla początkujących. Narzędzie to, zintegrowane z platformą Canva, pozwala na szybkie tworzenie grafik z tekstu, a następnie używanie ich w prezentacjach, postach w mediach społecznościowych i innych projektach graficznych.</p>
+            </li>
+            <li>
+                <a href="https://www.youtube.com/watch?v=kYJzJbJ-d_U" target="_blank">How to Write a Good Prompt for AI Image Generation</a>
+                <p>Poradnik wideo na YouTube (w języku angielskim) prezentujący praktyczne wskazówki, jak tworzyć efektywne i szczegółowe prompty. To idealne uzupełnienie dla każdego, kto chce opanować sztukę komunikacji z AI i uzyskać najlepsze możliwe rezultaty.</p>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<div id="quiz" class="container">
+    <div class="quiz-container">
+        <h2>Quiz wiedzy</h2>
+        <div id="quiz-content">
+            <div id="question-number"></div>
+            <div id="question"></div>
+            <ul id="options" class="quiz-options"></ul>
+        </div>
+        <div id="quiz-navigation" class="quiz-navigation">
+            <button id="prev-btn" class="hidden">Wróć do poprzedniego</button>
+            <button id="next-btn">Kolejne pytanie</button>
+            <button id="check-btn" class="hidden">Sprawdź wiedzę</button>
+        </div>
+        <div id="quiz-result" class="quiz-result hidden">
+            <div id="score"></div>
+            <img id="cat-image" src="" alt="Wynik quizu">
+            <p id="motivational-quote"></p>
+            <button id="reset-btn" class="reset-quiz-btn">Spróbuj jeszcze raz</button>
+        </div>
+    </div>
+</div>
+
+<button id="pdf-export-button">Download PDF</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const menuItems = document.querySelectorAll('.menu-item');
+        const containers = document.querySelectorAll('.container');
+        const learnMoreBtn = document.querySelector('.learn-more-btn');
+        const pdfButton = document.getElementById('pdf-export-button');
+        
+        function showSection(sectionId) {
+            containers.forEach(container => {
+                container.classList.remove('active');
+            });
+            menuItems.forEach(item => {
+                item.classList.remove('active');
+            });
+            document.getElementById(sectionId).classList.add('active');
+            document.querySelector(`.menu-item[data-section="${sectionId}"]`).classList.add('active');
+            
+            // Ukryj przycisk PDF na stronie głównej
+            if (sectionId === 'home') {
+                pdfButton.classList.add('hidden');
+            } else {
+                pdfButton.classList.remove('hidden');
+            }
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        menuItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const sectionId = item.getAttribute('data-section');
+                showSection(sectionId);
+            });
+        });
+
+        if (learnMoreBtn) {
+            learnMoreBtn.addEventListener('click', () => {
+                showSection('key-concepts');
+            });
+        }
+        
+        // Akordeony
+        const accordions = document.querySelectorAll('.accordion');
+        accordions.forEach(acc => {
+            acc.addEventListener('click', function() {
+                this.classList.toggle('active');
+                const panel = this.nextElementSibling;
+                if (panel.style.maxHeight) {
+                    panel.style.maxHeight = null;
+                } else {
+                    panel.style.maxHeight = panel.scrollHeight + "px";
+                }
+            });
+        });
+        
+        // Quiz
+        const questions = [
+            {
+                question: "Co jest kluczowym elementem w komunikacji z AI do generowania obrazów?",
+                options: ["Model AI", "Hardware", "Prompt", "Prędkość internetu"],
+                correctAnswer: "Prompt"
+            },
+            {
+                question: "Co oznacza powiedzenie Thomasa Watsona 'Good design is good business'?",
+                options: ["Dobry design jest tani w produkcji", "Design jest najważniejszy w biznesie", "Dobry design przekłada się na konkretne korzyści biznesowe", "Tylko duże firmy potrzebują dobrego designu"],
+                correctAnswer: "Dobry design przekłada się na konkretne korzyści biznesowe"
+            },
+            {
+                question: "Jaki jest główny cel tworzenia materiałów audiowizualnych z AI, według materiału?",
+                options: ["Oszczędność czasu i pieniędzy", "Zastąpienie profesjonalnych twórców", "Tworzenie filmów tylko dla dużych firm", "Generowanie tylko abstrakcyjnych obrazów"],
+                correctAnswer: "Oszczędność czasu i pieniędzy"
+            },
+            {
+                question: "Jaki rodzaj biznesu został podany jako przykład, który może skorzystać z AI do tworzenia reklam?",
+                options: ["Wielkie korporacje technologiczne", "Firmy z branży finansowej", "Piekarnia, kawiarnia, kwiaciarnia", "Rządowe agencje"],
+                correctAnswer: "Piekarnia, kawiarnia, kwiaciarnia"
+            },
+            {
+                question: "Które narzędzie zostało wymienione do montażu wideo, ale zaznaczono, że można użyć dowolnego darmowego programu?",
+                options: ["Adobe Premiere Pro", "Final Cut Pro", "DaVinci Resolve", "Blender"],
+                correctAnswer: "Final Cut Pro"
+            },
+            {
+                question: "Czym charakteryzuje się dobry design, według materiału?",
+                options: ["Jest drogi i ekskluzywny", "Buduje zaufanie i jest intuicyjny", "Zawsze ma wiele kolorów", "Jest niezrozumiały dla przeciętnego klienta"],
+                correctAnswer: "Buduje zaufanie i jest intuicyjny"
+            },
+            {
+                question: "Co jest najczęstszym błędem podczas generowania obrazów z AI?",
+                options: ["Używanie zbyt wielu narzędzi", "Traktowanie AI jako magicznej różdżki", "Tworzenie zbyt krótkich promptów", "Niedokładne, zbyt ogólne prompty"],
+                correctAnswer: "Niedokładne, zbyt ogólne prompty"
+            },
+            {
+                question: "Jakie korzyści biznesowe przynosi dobry design?",
+                options: ["Niższe koszty produkcji", "Wyższe marże", "Lepsze doświadczenia użytkownika i zwiększone zaufanie", "Szybszą dostawę produktów"],
+                correctAnswer: "Lepsze doświadczenia użytkownika i zwiększone zaufanie"
+            },
+            {
+                question: "Jaka była długość przykładowego filmu promocyjnego dla restauracji?",
+                options: ["30 sekund", "1 minuta", "10 sekund", "2 minuty"],
+                correctAnswer: "30 sekund"
+            },
+            {
+                question: "Jaki problem biznesowy rozwiązuje użycie AI do tworzenia treści?",
+                options: ["Brak utalentowanych grafików", "Wysokie koszty i czas produkcji", "Brak pomysłów na kampanie", "Zbyt duża konkurencja w internecie"],
+                correctAnswer: "Wysokie koszty i czas produkcji"
+            },
+            {
+                question: "Jakie jest główne zadanie użytkownika podczas pracy z AI do tworzenia wideo?",
+                options: ["Ręczne rysowanie klatek", "Generowanie, montaż i opracowanie strategii", "Zakup drogiego oprogramowania", "Zastąpienie profesjonalistów"],
+                correctAnswer: "Generowanie, montaż i opracowanie strategii"
+            },
+            {
+                question: "Czym różni się podejście do tworzenia wideo z AI od tradycyjnego?",
+                options: ["AI tworzy wszystko automatycznie", "Tradycyjne metody są szybsze i tańsze", "AI pozwala na szybkie tworzenie z opisu, bez drogiego sprzętu", "Nie ma żadnej różnicy"],
+                correctAnswer: "AI pozwala na szybkie tworzenie z opisu, bez drogiego sprzętu"
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let userAnswers = new Array(questions.length).fill(null);
+        
+        const questionElement = document.getElementById('question');
+        const optionsElement = document.getElementById('options');
+        const questionNumberElement = document.getElementById('question-number');
+        const nextBtn = document.getElementById('next-btn');
+        const prevBtn = document.getElementById('prev-btn');
+        const checkBtn = document.getElementById('check-btn');
+        const resultContainer = document.getElementById('quiz-result');
+        const scoreElement = document.getElementById('score');
+        const catImage = document.getElementById('cat-image');
+        const motivationalQuote = document.getElementById('motivational-quote');
+        const resetBtn = document.getElementById('reset-btn');
+
+        function showQuestion(index) {
+            if (index >= questions.length || index < 0) {
+                return;
+            }
+            const q = questions[index];
+            questionNumberElement.textContent = `${index + 1}/${questions.length}`;
+            questionElement.textContent = q.question;
+            optionsElement.innerHTML = '';
+            q.options.forEach((option, i) => {
+                const li = document.createElement('li');
+                li.textContent = option;
+                li.classList.add('quiz-option');
+                if (userAnswers[index] === option) {
+                    li.classList.add('selected');
+                }
+                li.addEventListener('click', () => {
+                    userAnswers[index] = option;
+                    document.querySelectorAll('#options .quiz-option').forEach(item => item.classList.remove('selected'));
+                    li.classList.add('selected');
+                    updateNavigationButtons();
+                });
+                optionsElement.appendChild(li);
+            });
+            updateNavigationButtons();
+            resultContainer.classList.add('hidden');
+        }
+
+        function updateNavigationButtons() {
+            prevBtn.classList.toggle('hidden', currentQuestionIndex === 0);
+            nextBtn.classList.toggle('hidden', currentQuestionIndex === questions.length - 1);
+            checkBtn.classList.toggle('hidden', currentQuestionIndex !== questions.length - 1);
+
+            const isAnswered = userAnswers[currentQuestionIndex] !== null;
+            if (currentQuestionIndex === questions.length - 1) {
+                checkBtn.disabled = userAnswers.includes(null);
+            }
+            nextBtn.disabled = !isAnswered;
+        }
+
+        function checkAnswers() {
+            let correctCount = 0;
+            questions.forEach((q, i) => {
+                const selectedOption = userAnswers[i];
+                if (selectedOption === q.correctAnswer) {
+                    correctCount++;
+                }
+            });
+
+            optionsElement.innerHTML = '';
+            questions[currentQuestionIndex].options.forEach(option => {
+                const li = document.createElement('li');
+                li.textContent = option;
+                li.classList.add('quiz-option');
+                if (option === questions[currentQuestionIndex].correctAnswer) {
+                    li.classList.add('correct');
+                } else if (option === userAnswers[currentQuestionIndex] && option !== questions[currentQuestionIndex].correctAnswer) {
+                    li.classList.add('incorrect');
+                }
+                optionsElement.appendChild(li);
+            });
+
+            showResult(correctCount);
+        }
+
+        function showResult(correctCount) {
+            document.getElementById('quiz-content').classList.add('hidden');
+            document.getElementById('quiz-navigation').classList.add('hidden');
+            resultContainer.classList.remove('hidden');
+
+            const totalQuestions = questions.length;
+            const percentage = Math.round((correctCount / totalQuestions) * 100);
+            scoreElement.textContent = `Twój wynik: ${correctCount}/${totalQuestions}`;
+
+            let catSrc = '';
+            let quote = '';
+            if (percentage <= 25) {
+                catSrc = 'sad cat.jfif';
+                quote = "Nie poddawaj się! Każdy początek jest trudny. Spróbuj jeszcze raz, a zobaczysz, że będzie coraz lepiej.";
+            } else if (percentage <= 40) {
+                catSrc = 'angry cat.jpg';
+                quote = "Dobrze, że próbujesz! Analizuj błędy i idź do przodu. Wiedza czeka na Ciebie!";
+            } else if (percentage <= 60) {
+                catSrc = 'disapointed cat.jpg';
+                quote = "Jesteś na dobrej drodze! Już wiesz całkiem sporo. Powtórz materiał i osiągnij jeszcze lepszy wynik!";
+            } else if (percentage <= 70) {
+                catSrc = 'happy cat.jpg';
+                quote = "Świetna robota! To bardzo solidny wynik. Jesteś blisko perfekcji, wystarczy kilka drobnych poprawek!";
+            } else {
+                catSrc = 'celebraiting cat.jfif';
+                quote = "Fantastyczny wynik! Jesteś ekspertem w tej dziedzinie. Gratulacje!";
+            }
+
+            catImage.src = catSrc;
+            motivationalQuote.textContent = quote;
+        }
+        
+        function resetQuiz() {
+            currentQuestionIndex = 0;
+            userAnswers = new Array(questions.length).fill(null);
+            document.getElementById('quiz-content').classList.remove('hidden');
+            document.getElementById('quiz-navigation').classList.remove('hidden');
+            resultContainer.classList.add('hidden');
+            showQuestion(currentQuestionIndex);
+        }
+
+        nextBtn.addEventListener('click', () => {
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                showQuestion(currentQuestionIndex);
+            }
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                showQuestion(currentQuestionIndex);
+            }
+        });
+
+        checkBtn.addEventListener('click', checkAnswers);
+        resetBtn.addEventListener('click', resetQuiz);
+
+        showSection('home');
+        
+        // PDF Export
+        document.getElementById('pdf-export-button').addEventListener('click', () => {
+            const element = document.body;
+            const opt = {
+                margin:       1,
+                filename:     'notatki_audiowizualne_AI.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+
+            const originalDisplay = [];
+            containers.forEach((container, index) => {
+                originalDisplay[index] = container.style.display;
+                container.style.display = 'block';
+            });
+            
+            const originalStickyDisplay = [];
+            const stickyNotes = document.querySelectorAll('.sticky-note');
+            stickyNotes.forEach((note, index) => {
+                originalStickyDisplay[index] = note.style.transform;
+                note.style.transform = 'none'; // Usuń rotację do PDF
+            });
+            
+            html2pdf().from(element).set(opt).save().then(() => {
+                containers.forEach((container, index) => {
+                    container.style.display = originalDisplay[index];
+                });
+                stickyNotes.forEach((note, index) => {
+                    note.style.transform = originalStickyDisplay[index]; // Przywróć rotację
+                });
+                showSection('home'); // Przywróć domyślne wyświetlanie
+            });
+        });
+    });
+</script>
+</body>
+</html>
