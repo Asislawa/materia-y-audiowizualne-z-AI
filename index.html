@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tworzenie treści audiowizualnych z AI</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Montserrat:wght@400;700&display=swap');
+
+        :root {
+            --main-bg-color: #f0f2f5;
+            --container-bg-color: #ffffff;
+            --accent-color: #2196f3;
+            --secondary-accent-color: #1565c0;
+            --text-color: #333333;
+            --heading-color: #1a237e;
+            --border-radius: 16px;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            --sub-heading-color: #0d47a1;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--main-bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .main-container {
+            display: none;
+            width: 100%;
+            height: 100vh;
+        }
+
+        .landing-page {
+            text-align: center;
+            padding: 50px;
+            background-color: var(--container-bg-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+
+        .landing-page h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 3rem;
+            color: var(--heading-color);
+            margin-bottom: 20px;
+        }
+
+        .landing-page p {
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+        }
+
+        .start-btn {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .start-btn:hover {
+            background-color: var(--secondary-accent-color);
+            transform: translateY(-2px);
+        }
+
+        .content-wrapper {
+            display: flex;
+            height: 100vh;
+            max-width: 1400px;
+            margin: 0 auto;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            background-color: var(--container-bg-color);
+        }
+
+        .sidebar {
+            width: 300px;
+            background-color: var(--heading-color);
+            padding: 40px 0;
+            flex-shrink: 0;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar h1 {
+            font-family: 'Montserrat', sans-serif;
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #ffffff;
+            padding-bottom: 10px;
+        }
+
+        .sidebar-menu {
+            width: 100%;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 18px 30px;
+            margin: 10px 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.2s;
+            text-align: center;
+        }
+
+        .sidebar-menu a.active, .sidebar-menu a:hover {
+            background-color: var(--accent-color);
+            transform: scale(1.05);
+        }
+
+        .content {
+            flex-grow: 1;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        h2 {
+            font-family: 'Montserrat', sans-serif;
+            color: var(--sub-heading-color);
+            border-left: 5px solid var(--accent-color);
+            padding-left: 15px;
+            margin-top: 0;
+            margin-bottom: 30px;
+        }
+        
+        h3 {
+            font-family: 'Montserrat', sans-serif;
+            color: var(--sub-heading-color);
+            margin-top: 30px;
+        }
+
+        .accordion {
+            background-color: #e3f2fd;
+            color: var(--text-color);
+            cursor: pointer;
+            padding: 18px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 15px;
+            transition: 0.4s;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .active-accordion, .accordion:hover {
+            background-color: #bbdefb;
+        }
+
+        .panel {
+            padding: 0 18px;
+            background-color: white;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease-out;
+        }
+
+        .sticky-notes-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+            justify-content: center;
+        }
+
+        .sticky-note {
+            background-color: #ffeb3b;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 1;
+            border: 2px solid #fdd835;
+        }
+        
+        .sticky-note:nth-child(2) { transform: rotate(1deg); }
+        .sticky-note:nth-child(3) { transform: rotate(-2deg); }
+        .sticky-note:nth-child(4) { transform: rotate(2deg); }
+        .sticky-note:nth-child(5) { transform: rotate(-1deg); }
+
+        .sticky-note h4 {
+            margin-top: 0;
+            font-family: 'Montserrat', sans-serif;
+            color: #8d6e63;
+        }
+
+        .quiz-question {
+            margin-bottom: 25px;
+            background-color: #e3f2fd;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            border: 1px solid #bbdefb;
+        }
+
+        .quiz-question h4 {
+            margin-top: 0;
+        }
+
+        .quiz-options label {
+            display: block;
+            background-color: #e8f5e9;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .quiz-options label:hover {
+            background-color: #dcedc8;
+        }
+
+        .quiz-options input[type="radio"] {
+            display: none;
+        }
+
+        .quiz-options input[type="radio"]:checked + label {
+            background-color: var(--accent-color);
+            color: white;
+            font-weight: bold;
+        }
+        
+        .quiz-options label.correct {
+            background-color: #43a047 !important;
+            color: white;
+        }
+
+        .quiz-options label.incorrect {
+            background-color: #e57373 !important;
+            color: white;
+        }
+
+        .quiz-submit {
+            padding: 15px 30px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .quiz-submit:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .quiz-submit:hover:enabled {
+            background-color: var(--secondary-accent-color);
+            transform: translateY(-2px);
+        }
+
+        #quiz-result {
+            margin-top: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            color: var(--sub-heading-color);
+        }
+
+        #cat-image-container {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        #cat-image-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+
+        #download-pdf-btn {
+            display: block;
+            width: 250px;
+            margin: 40px auto;
+            padding: 15px;
+            text-align: center;
+            background-color: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        #download-pdf-btn:hover {
+            background-color: #c62828;
+            transform: translateY(-2px);
+        }
+
+        .link-block {
+            margin-top: 25px;
+            padding: 20px;
+            background-color: #e3f2fd;
+            border-left: 5px solid var(--accent-color);
+            border-radius: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .content-wrapper {
+                flex-direction: column;
+                height: auto;
+            }
+            .sidebar {
+                width: 100%;
+                padding: 20px 0;
+            }
+            .content {
+                padding: 20px;
+            }
+            .sticky-notes-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="landing-page" id="landing-page">
+    <h1>Tworzenie treści audiowizualnych z AI</h1>
+    <p>Odkryj, jak sztuczna inteligencja rewolucjonizuje świat grafiki, wideo i dźwięku.</p>
+    <button class="start-btn" id="start-btn">Zacznij naukę</button>
+</div>
+
+<div class="main-container" id="main-container">
+    <div class="content-wrapper">
+        <aside class="sidebar">
+            <h1>Tworzenie treści audiowizualnych z AI</h1>
+            <nav class="sidebar-menu">
+                <a href="#" class="tab-link active" data-tab="tab1">Grafika z AI</a>
+                <a href="#" class="tab-link" data-tab="tab2">Generowanie wideo</a>
+                <a href="#" class="tab-link" data-tab="tab3">ElevenLabs i audio</a>
+                <a href="#" class="tab-link" data-tab="tab4">Quiz wiedzy</a>
+            </nav>
+        </aside>
+    
+        <main class="content">
+            <div id="tab1" class="tab-content active">
+                <h2>Tworzenie grafiki z AI</h2>
+                <p>Obraz, dzięki swojej sile perswazji, jest w stanie wywołać skojarzenia szybciej niż słowa. W dobie, gdy uwaga użytkownika jest towarem deficytowym, dobry design przestaje być luksusem, a staje się strategiczną koniecznością biznesową. Jak powiedział Thomas Watson, „Good design is good business”.</p>
+                <p>Narzędzia AI, takie jak Midjourney czy Gemini, demokratyzują dostęp do profesjonalnego designu, umożliwiając małym firmom konkurowanie z dużymi korporacjami. Grafika nie jest już tylko ładnym obrazkiem, ale sposobem na opowiadanie historii marki.</p>
+
+                ---
+
+                <h3>Kluczowe pojęcia</h3>
+                <button class="accordion">Modele dyfuzyjne</button>
+                <div class="panel">
+                    <p>Modele dyfuzyjne to najnowsza generacja narzędzi do tworzenia grafiki, wideo i dźwięku. Ich działanie opiera się na procesie dyfuzji, który polega na stopniowym dodawaniu szumu do danych. Następnie model uczy się odwracać ten proces, aby odtworzyć oryginalne dane z samego szumu. To podejście pozwala na generowanie bardzo realistycznych i złożonych obrazów.</p>
+                </div>
+                
+                <button class="accordion">Prompt</button>
+                <div class="panel">
+                    <p><b>Prompt</b> to precyzyjny opis tekstowy, który jest instrukcją dla sztucznej inteligencji, mówiącą, co ma wygenerować. Dobry prompt to klucz do uzyskania pożądanego rezultatu. Zamiast ogólnego opisu, należy podać jak najwięcej szczegółów, tak jakbyśmy rozmawiali z bardzo utalentowanym, ale dosłownym grafikiem. Pamiętaj, że AI, jeśli nie otrzyma wystarczająco dużo detali, wymyśla je sama.</p>
+                </div>
+
+                ---
+
+                <h3>Przykłady</h3>
+                <p>Struktura efektywnego promptu graficznego obejmuje elementy narracyjne i techniczne:</p>
+                <ul>
+                    <li><b>Temat:</b> Główny obiekt lub akcja. Np. "lody w wafelku trzymane w dłoni".</li>
+                    <li><b>Tło i szczegóły:</b> Opis otoczenia, które nadaje kontekst. Np. "miejska ulica z kawiarnianym parasolem, budynkiem i samochodami". Dobrym zabiegiem jest użycie "rozmytego tła".</li>
+                    <li><b>Klimat:</b> Określa atmosferę, np. "letni, radosny, swobodny".</li>
+                    <li><b>Technika:</b> Styl wizualny, np. "fotografia", "akwarela", "impresjonizm".</li>
+                    <li><b>Sprzęt:</b> Nawiązanie do rodzaju obiektywu, np. "aparat z obiektywem o płytkiej głębi ostrości, np. smartfon".</li>
+                    <li><b>Światło:</b> Typ oświetlenia, np. "naturalne, dzienne, jasne, słoneczne". Ciekawym efektem jest użycie "złotej godziny".</li>
+                    <li><b>Kompozycja:</b> Ułożenie elementów w kadrze, np. "asymetryczna", "ujęcie od dołu".</li>
+                </ul>
+
+                <p><b>Wskazówka:</b> Modele do generowania obrazów są świetne w tworzeniu nowych, unikalnych grafik, ale mają problem z dokładnym odwzorowaniem istniejących produktów. W takich przypadkach warto użyć narzędzi, które umożliwiają wgranie własnego zdjęcia i modyfikację tła lub innych elementów z użyciem AI (np. <b>Background Replace w Freepik</b>). Bardziej zaawansowaną opcją jest wytrenowanie własnego modelu AI na zdjęciach produktu lub postaci (np. w narzędziu <b>Pimento</b>).</p>
+                
+                ---
+
+                <h3>Do zapamiętania</h3>
+                <div class="sticky-notes-container">
+                    <div class="sticky-note">
+                        <h4>Korzyści z designu</h4>
+                        <p>✨ Buduje zaufanie marki.<br>⏱️ Oszczędza czas i pieniądze.<br>📈 Zwiększa sprzedaż.<br>🏆 Wyróżnia na tle konkurencji.</p>
+                    </div>
+                    <div class="sticky-note">
+                        <h4>Prompt jako instrukcja</h4>
+                        <p>Zamiast "zdjęcie lodów", użyj "dwie gałki lodów czekoladowych w wafelku, na tle miejskiej ulicy, fotografia, ciepłe światło, złota godzina".</p>
+                    </div>
+                    <div class="sticky-note">
+                        <h4>Kategorie narzędzi</h4>
+                        <p><b>Dedykowane:</b> Midjourney, Recraft.<br><b>Agregatory:</b> Pimento, Freepik.<br><b>Open Source:</b> Stable Diffusion.<br><b>Specjalistyczne:</b> Topaz, Magnific.<br><b>Modele wbudowane w LLM:</b> Imagen 4 w Gemini.</p>
+                    </div>
+                </div>
+                
+                ---
+
+                <h3>Więcej wiedzy</h3>
+                <div class="link-block">
+                    <h4>Generowanie obrazów z Midjourney: Przewodnik</h4>
+                    <p>Link: <a href="https://www.midjourney.com/" target="_blank">https://www.midjourney.com/</a></p>
+                    <p>Oficjalna strona Midjourney, jednego z najpopularniejszych modeli do generowania obrazów. Znajdziesz tu galerię inspiracji, tutoriale i instrukcje, jak dołączyć do serwera Discord, aby zacząć tworzyć własne grafiki.</p>
+                </div>
+                <div class="link-block">
+                    <h4>Stabilna dyfuzja: Przewodnik</h4>
+                    <p>Link: <a href="https://huggingface.co/docs/diffusers/tutorials/stable_diffusion" target="_blank">https://huggingface.co/docs/diffusers/tutorials/stable_diffusion</a></p>
+                    <p>Ten artykuł na platformie Hugging Face dogłębnie wyjaśnia, jak działa Stable Diffusion, popularny model open-source. To świetne źródło, aby zrozumieć techniczną stronę generowania obrazów i nauczyć się, jak wykorzystać go na własnym komputerze.</p>
+                </div>
+            </div>
+
+            <div id="tab2" class="tab-content">
+                <h2>Generowanie wideo z AI</h2>
+                <p>Materiały wideo mają ogromną siłę, ponieważ łączą ruch, dźwięk i narrację, co jest niezwykle angażujące dla ludzkiego mózgu. Dzięki AI tworzenie wideo jest dostępne dla każdego, eliminując potrzebę dużych budżetów czy specjalistycznych umiejętności. Pozwala to na wstępne przetestowanie pomysłów na filmy i reklamy, co znacznie obniża koszty produkcji.</p>
+
+                ---
+
+                <h3>Kluczowe pojęcia</h3>
+                <button class="accordion">VEO 3</button>
+                <div class="panel">
+                    <p><b>VEO 3</b> to najnowszy model Google do generowania wideo, który tworzy bardzo realistyczne animacje, zgodne z podanym promptem. Może być używany za pomocą różnych platform, takich jak Gemini, Flow, AI Studio lub Vertex. Modele te potrafią generować natywny dźwięk, w tym precyzyjną synchronizację ust z dialogami.</p>
+                </div>
+                
+                <button class="accordion">Struktura promptu wideo</button>
+                <div class="panel">
+                    <p>Tworzenie promptów dla wideo bazuje na zasadach z generowania grafiki, ale jest rozbudowane o dodatkowe elementy:</p>
+                    <ul>
+                        <li><b>Podmiot (subject):</b> Kto lub co jest głównym obiektem w scenie? Np. "szczeniak rasy golden retriever".</li>
+                        <li><b>Akcja (action):</b> Co robi podmiot? Używaj dynamicznych czasowników, np. "samochód pędzi krętą nadmorską drogą".</li>
+                        <li><b>Scena (scene):</b> Gdzie rozgrywa się akcja? Np. "oświetlone neonami cyberpunkowe miasto o północy".</li>
+                        <li><b>Kamera (camera):</b> Perspektywa, z której filmowana jest scena, np. "ujęcie z lotu ptaka" lub "najazd".</li>
+                        <li><b>Styl i estetyka (style & aesthetic):</b> Ogólny wygląd i nastrój. Np. "styl kinowy, film 35 mm, anime, fotorealistyczny".</li>
+                        <li><b>Dźwięk (audio):</b> Opcjonalny element w zaawansowanych modelach, pozwalający na określenie dialogów, efektów dźwiękowych czy muzyki.</li>
+                    </ul>
+                </div>
+
+                ---
+
+                <h3>Przykłady</h3>
+                <p>Istnieją trzy główne sposoby generowania wideo z AI:</p>
+                <ul>
+                    <li><b>Text-to-Video:</b> Najprostsza metoda, gdzie wystarczy wprowadzić prompt tekstowy. Dobrze sprawdza się do tworzenia ogólnych, abstrakcyjnych materiałów lub tła, nad którymi nie musimy mieć pełnej kontroli.</li>
+                    <li><b>Image-to-Video:</b> Pozwala na poruszenie statycznego obrazu lub zdjęcia. Daje większą kontrolę nad efektem końcowym, ponieważ model bazuje na wizualnych referencjach. Można np. wgrać zdjęcie produktu i wygenerować animację z tym produktem w ruchu.</li>
+                    <li><b>Video-to-Video:</b> Modyfikacja istniejących nagrań. Umożliwia zmianę stylu, atmosfery, czy formatu filmu (np. z poziomego na pionowy za pomocą funkcji <b>Expand Video</b> w Runway).</li>
+                </ul>
+
+                <p><b>Wskazówka:</b> Użycie narzędzi takich jak <b>HeyGen</b> pozwala na łatwe tworzenie wirtualnych awatarów i generowanie wideo z tekstu, a także dubbingowanie filmów na wiele języków z zachowaniem oryginalnego brzmienia głosu i stylu mówienia.</p>
+                
+                ---
+
+                <h3>Do zapamiętania</h3>
+                <div class="sticky-notes-container">
+                    <div class="sticky-note">
+                        <h4>Korzyści z wideo AI</h4>
+                        <p>🚀 Zwiększone zaangażowanie.<br>🛠️ Optymalizacja przekazu.<br>🔄 Łatwa adaptacja do różnych formatów.<br>💰 Oszczędność czasu i budżetu.</p>
+                    </div>
+                    <div class="sticky-note">
+                        <h4>Praktyczne zastosowanie</h4>
+                        <p>Tworzenie trailerów, teaserów, krótkich materiałów na social media. Dostosowywanie filmów do różnych platform (pion, kwadrat, poziom).</p>
+                    </div>
+                    <div class="sticky-note">
+                        <h4>Wady modeli</h4>
+                        <p>Modele często "halucynują" i generują nieprzewidziane scenariusze. Może być konieczne wielokrotne generowanie, aby uzyskać pożądany efekt.</p>
+                    </div>
+                </div>
+
+                ---
+
+                <h3>Więcej wiedzy</h3>
+                <div class="link-block">
+                    <h4>Runway ML: oficjalne samouczki</h4>
+                    <p>Link: <a href="https://runwayml.com/tutorials/" target="_blank">https://runwayml.com/tutorials/</a></p>
+                    <p>Runway to jedno z czołowych narzędzi do edycji i generowania wideo z AI. Na tej stronie znajdziesz kompleksowe tutoriale, które pomogą Ci opanować zaawansowane funkcje, takie jak rozszerzanie wideo czy zmiana stylu.</p>
+                </div>
+                <div class="link-block">
+                    <h4>HeyGen: Tworzenie filmów z awatarem AI</h4>
+                    <p>Link: <a href="https://www.heygen.com/tutorial" target="_blank">https://www.heygen.com/tutorial</a></p>
+                    <p>HeyGen to platforma, która specjalizuje się w tworzeniu wideo z cyfrowymi awatarami. Ten link prowadzi do sekcji tutoriali, gdzie dowiesz się, jak stworzyć własnego awatara i wygenerować realistyczny film z tekstu w ciągu kilku minut.</p>
+                </div>
+            </div>
+            
+            <div id="tab3" class="tab-content">
+                <h2>ElevenLabs: Głos i dźwięk w AI</h2>
+                <p>ElevenLabs to lider w dziedzinie audio AI, oferujący rozwiązania, które z tekstu tworzą niezwykle realistyczny głos. Ich technologia jest wykorzystywana przez największych graczy w branży, od Nvidii po The Washington Post. Kluczową zaletą jest możliwość tworzenia profesjonalnych treści audio bez konieczności użycia studia, mikrofonu czy dużego budżetu.</p>
+
+                ---
+
+                <h3>Kluczowe pojęcia</h3>
+                <button class="accordion">Text-to-Speech (TTS)</button>
+                <div class="panel">
+                    <p><b>Text-to-Speech (TTS)</b> to technologia, która przekształca tekst pisany w mowę. ElevenLabs oferuje generowanie realistycznego głosu z tekstu, który brzmi tak naturalnie, że trudno odróżnić go od głosu prawdziwego człowieka.</p>
+                </div>
+
+                <button class="accordion">Voice Cloning</button>
+                <div class="panel">
+                    <p><b>Voice Cloning</b> to zaawansowana funkcja, która pozwala na klonowanie głosu dowolnej osoby, pod warunkiem uzyskania zgody. Sklonowany głos może być następnie wykorzystywany do generowania treści w ponad 74 językach, co otwiera ogromne możliwości dla twórców globalnych treści.</p>
+                </div>
+                
+                <button class="accordion">AI Dubbing</button>
+                <div class="panel">
+                    <p><b>AI Dubbing</b> to narzędzie, które umożliwia tłumaczenie filmów i nagrań na inne języki, z zachowaniem oryginalnego brzmienia i stylu mówienia. Użycie tej funkcji pozwala np. na stworzenie wersji wideo w języku japońskim czy fińskim, bez konieczności nauki języków.</p>
+                </div>
+
+                ---
+
+                <h3>Przykłady i zastosowania</h3>
+                <p>Dzięki technologii ElevenLabs możesz tworzyć i automatyzować różnorodne treści audio i wideo:</p>
+                <ul>
+                    <li><b>Podcasty i audiobooki:</b> Szybkie i tanie tworzenie narracji na podstawie tekstu.</li>
+                    <li><b>Voice-overy:</b> Generowanie profesjonalnych podkładów głosowych do filmów, prezentacji, czy reklam.</li>
+                    <li><b>Spoty reklamowe:</b> Tworzenie angażujących materiałów audio bez konieczności zatrudniania lektorów.</li>
+                    <li><b>Kontakt z klientem:</b> Wdrażanie automatycznych systemów obsługi, które brzmią naturalnie i profesjonalnie.</li>
+                </ul>
+
+                <p>Platforma jest wykorzystywana również w grach wideo, np. w Fortnite, do generowania dialogów i innych elementów dźwiękowych.</p>
+
+                ---
+
+                <h3>Do zapamiętania</h3>
+                <div class="sticky-notes-container">
+                    <div class="sticky-note">
+                        <h4>Dlaczego ElevenLabs?</h4>
+                        <p>💨 Szybkość i skalowalność.<br>🗣️ Realistyczna synteza mowy.<br>🌍 Obsługa ponad 74 języków.<br>💰 Redukcja kosztów.</p>
+                    </div>
+                    <div class="sticky-note">
+                        <h4>Klonowanie głosu</h4>
+                        <p>Pozwala na użycie głosu innej osoby, wymaga zgody, idealne do dubbingu i tworzenia treści w wielu językach.</p>
+                    </div>
+                </div>
+
+                ---
+
+                <h3>Więcej wiedzy</h3>
+                <div class="link-block">
+                    <h4>Oficjalna strona ElevenLabs</h4>
+                    <p>Link: <a href="https://elevenlabs.io/" target="_blank">https://elevenlabs.io/</a></p>
+                    <p>Odkryj pełne możliwości platformy, posłuchaj próbek głosów, przetestuj narzędzia do syntezy mowy i dowiedz się więcej o planach subskrypcyjnych. To najlepsze miejsce, aby zacząć pracę z ElevenLabs.</p>
+                </div>
+                <div class="link-block">
+                    <h4>Klonowanie głosu w praktyce: Przewodnik</h4>
+                    <p>Link: <a href="https://elevenlabs.io/voice-cloning" target="_blank">https://elevenlabs.io/voice-cloning</a></p>
+                    <p>Jeśli chcesz dowiedzieć się, jak dokładnie działa klonowanie głosu, jakich próbek potrzebujesz i jakie są zasady etycznego użycia tej technologii, to oficjalny przewodnik ElevenLabs jest idealnym źródłem informacji.</p>
+                </div>
+            </div>
+
+            <div id="tab4" class="tab-content">
+                <h2>Quiz wiedzy</h2>
+                <form id="quiz-form">
+                    <div class="quiz-question" id="q1">
+                        <h4>1. Które z poniższych stwierdzeń najlepiej oddaje znaczenie słów Thomasa Watsona, "Good design is good business"?</h4>
+                        <div class="quiz-options">
+                            <input type="radio" id="q1a" name="q1" value="a">
+                            <label for="q1a">Dobre projektowanie ma wyłącznie estetyczne znaczenie.</label>
+                            <input type="radio" id="q1b" name="q1" value="b">
+                            <label for="q1b">Dobre projektowanie jest narzędziem strategicznym, które przekłada się na konkretne korzyści biznesowe.</label>
+                            <input type="radio" id="q1c" name="q1" value="c">
+                            <label for="q1c">Dobre projektowanie jest dostępne tylko dla firm z dużymi budżetami.</label>
+                            <input type="radio" id="q1d" name="q1" value="d">
+                            <label for="q1d">Dobre projektowanie polega na używaniu jak największej liczby kolorów.</label>
+                        </div>
+                    </div>
+                    
+                    <div class="quiz-question" id="q2">
+                        <h4>2. Czym są "modele dyfuzyjne" w kontekście AI?</h4>
+                        <div class="quiz-options">
+                            <input type="radio" id="q2a" name="q2" value="a">
+                            <label for="q2a">Modele, które generują obrazy poprzez kopiowanie i wklejanie istniejących zdjęć.</label>
+                            <input type="radio" id="q2b" name="q2" value="b">
+                            <label for="q2b">Modele, które stopniowo dodają szum do danych, a następnie uczą się odwracać ten proces, aby odtworzyć obraz.</label>
+                            <input type="radio" id="q2c" name="q2" value="c">
+                            <label for="q2c">Modele, które służą wyłącznie do tworzenia infografik.</label>
+                            <input type="radio" id="q2d" name="q2" value="d">
+                            <label for="q2d">Modele, które mogą być używane tylko na superkomputerach.</label>
+                        </div>
+                    </div>
+
+                    <div class="quiz-question" id="q3">
+                        <h4>3. Jaki jest kluczowy element, który AI dodaje, jeśli prompt jest zbyt ogólny?</h4>
+                        <div class="quiz-options">
+                            <input type="radio" id="q3a" name="q3" value="a">
+                            <label for="q3a">Dodaje losowe kolory.</label>
+                            <input type="radio" id="q3b" name="q3" value="b">
+                            <label for="q3b">Wymusza na użytkowniku precyzyjny prompt.</label>
+                            <input type="radio" id="q3c" name="q3" value="c">
+                            <label for="q3c">Wymyśla brakujące szczegóły, co może prowadzić do nieoczekiwanych rezultatów.</label>
+                            <input type="radio" id="q3d" name="q3" value="d">
+                            <label for="q3d">Zawsze prosi o więcej informacji, zanim wygeneruje obraz.</label>
+                        </div>
+                    </div>
+
+                    <div class="quiz-question" id="q4">
+                        <h4>4. Jaka jest rekomendowana liczba zdjęć do wytrenowania własnego modelu postaci w narzędziu takim jak Pimento?</h4>
+                        <div class="quiz-options">
+                            <input type="radio" id="q4a" name="q4" value="a">
+                            <label for="q4a">Co najmniej 1 zdjęcie.</label>
+                            <input type="radio" id="q4b" name="q4" value="b">
+                            <label for="q4b">Co najmniej 4 zdjęcia, ale lepiej wgrać więcej niż 10-15.</label>
+                            <input type="radio" id="q4c" name="q4" value="c">
+                            <label for="q4c">Dowolna liczba zdjęć.</label>
+                            <input type="radio" id="q4d" name="q4" value="d">
+                            <label for="q4d">Dokładnie 5 zdjęć.</label>
+                        </div>
+                    </div>
+                    
+                    <div class="quiz-question" id="q5">
+                        <h4>5. Jaka jest różnica między Text-to-Video a Image-to-Video?</h4>
+                        <div class="quiz-options">
+                            <input type="radio" id="q5a" name="q5" value="a">
+                            <label for="q5a">Text-to-Video generuje wideo z tekstu, a Image-to-Video generuje wideo z obrazu statycznego.</label>
+                            <input type="radio" id="q5b" name="q5" value="b">
+                            <label for="q5b">Text-to-Video jest zawsze droższe, a Image-to-Video jest darmowe.</label>
+                            <input type="radio" id="q5c" name="q5" value="c">
+                            <label for="q5c">Oba narzędzia są takie same i generują wideo z tekstu i obrazów jednocześnie.</label>
+                            <input type="radio" id="q5d" name="q5" value="d">
+                            <label for="q5d">Image-to-Video jest szybsze od Text-to-Video.</label>
+                        </div>
+                    </div>
+                    
+                    <div class="quiz-question" id="q6">
+                        <h4>6. Który z modeli AI potrafi generować wideo z natywnym dźwiękiem, w tym z synchronizacją ust?</h4>
+                        <div class="quiz-options">
+                            <input type="radio" id="q6a" name="q6" value="a">
+                            <label for="q6a">Midjourney.</label>
+                            <input type="radio" id="q6b" name="q6" value="b">
+                            <label for="q6b">VEO 3.</label>
+                            <input type="radio" id="q6c" name="q6" value="c">
+                            <label for="q6c">Pimento.</label>
+                            <input type="radio" id="q6d" name="q6" value="d">
+                            <label for="q6d">Freepik.</label>
+                        </div>
+                    </div>
+
+                    <div class="quiz-question" id="q7">
+                        <h4>7. Jakie narzędzie pozwala na łatwe dubbingowanie filmów na wiele języków z zachowaniem oryginalnego brzmienia głosu i stylu mówienia?</h4>
+                        <div class="quiz-options">
+                            <input type="radio" id="q7a" name="q7" value="a">
+                            <label for="q7a">Luma Dream Machine.</label>
+                            <input type="radio" id="q7b" name="q7" value="b">
+                            <label for="q7b">Runway.</label>
+                            <input type="radio" id="q7c" name="q7" value="c">
+                            <label for="q7c">HeyGen.</label>
+                            <input type="radio" id="q7d" name="q7" value="d">
+                            <label for="q7d">Higgsfield.</label>
+                        </div>
+                    </div>
+
+                    <div class="quiz-question" id="q8">
+                        <h4>8. Jaka jest główna zaleta użycia AI w tworzeniu materiałów wideo, szczególnie dla małych firm?</h4>
+                        <div class="quiz-options">
+                            <input type="radio" id="q8a" name="q8" value="a">
+                            <label for="q8a">Możliwość tworzenia materiałów bez potrzeby dużego budżetu i specjalistycznej wiedzy.</label>
+                            <input type="radio" id="q8b" name="q8" value="b">
+                            <label for="q8b">Generowanie wideo jest zawsze darmowe.</label>
+                            <input type="radio" id="q8c" name="q8" value="c">
+                            <label for="q8c">AI generuje tylko filmy w stylu kinowym.</label>
+                            <input type="radio" id="q8d" name="q8" value="d">
+                            <label for="q8d">Zwiększenie liczby pytań od klientów.</label>
+                        </div>
+                    </div>
+
+                    <div class="quiz-question" id="q9">
+                        <h4>9. Który element struktury promptu wideo nadaje scenie narracyjny impet?</h4>
+                        <div class="quiz-options">
+                            <input type="radio" id="q9a" name="q9" value="a">
+                            <label for="q9a">Scena.</label>
+                            <input type="radio" id="q9b" name="q9" value="b">
+                            <label for="q9b">Podmiot.</label>
+                            <input type="radio" id="q9c" name="q9" value="c">
+                            <label for="q9c">Akcja.</label>
+                            <input type="radio" id="q9d" name="q9" value="d">
+                            <label for="q9d">Styl i estetyka.</label>
+                        </div>
+                    </div>
+                    
+                    <div class="quiz-question" id="q10">
+                        <h4>10. Czym jest "Voice Cloning" w ElevenLabs?</h4>
+                        <div class="quiz-options">
+                            <input type="radio" id="q10a" name="q10" value="a">
+                            <label for="q10a">Technologia, która generuje muzykę na podstawie głosu.</label>
+                            <input type="radio" id="q10b" name="q10" value="b">
+                            <label for="q10b">Funkcja, która pozwala na klonowanie głosu i wykorzystanie go do generowania treści w wielu językach.</label>
+                            <input type="radio" id="q10c" name="q10" value="c">
+                            <label for="q10c">Narzędzie, które pozwala na automatyczne tworzenie podcastów.</label>
+                            <input type="radio" id="q10d" name="q10" value="d">
+                            <label for="q10d">Nazwa dla efektu deepfake, który jest szkodliwy.</label>
+                        </div>
+                    </div>
+                    
+                    <div class="quiz-question" id="q11">
+                        <h4>11. Jaki efekt w fotografii jest opisany jako ciepłe, miękkie światło, które występuje tuż przed wschodem lub po zachodzie słońca?</h4>
+                        <div class="quiz-options">
+                            <input type="radio" id="q11a" name="q11" value="a">
+                            <label for="q11a">Światło UV.</label>
+                            <input type="radio" id="q11b" name="q11" value="b">
+                            <label for="q11b">Nocne światło.</label>
+                            <input type="radio" id="q11c" name="q11" value="c">
+                            <label for="q11c">Światło studyjne.</label>
+                            <input type="radio" id="q11d" name="q11" value="d">
+                            <label for="q11d">Złota godzina.</label>
+                        </div>
+                    </div>
+
+                    <div class="quiz-question" id="q12">
+                        <h4>12. Jaka jest zaleta korzystania z modelu Imagen 4 w Gemini do generowania obrazów?</h4>
+                        <div class="quiz-options">
+                            <input type="radio" id="q12a" name="q12" value="a">
+                            <label for="q12a">Wymaga przepisywania całego promptu po każdej modyfikacji.</label>
+                            <input type="radio" id="q12b" name="q12" value="b">
+                            <label for="q12b">Generuje obrazy tylko w niskiej rozdzielczości.</label>
+                            <input type="radio" id="q12c" name="q12" value="c">
+                            <label for="q12c">Umożliwia modyfikowanie wygenerowanych obrazów w naturalnej konwersacji, bez konieczności przepisywania całego promptu.</label>
+                            <input type="radio" id="q12d" name="q12" value="d">
+                            <label for="q12d">Nie potrafi generować realistycznych obrazów.</label>
+                        </div>
+                    </div>
+
+                    <div class="quiz-question" id="q13">
+                        <h4>13. Co to jest "negatywny prompt" w kontekście generowania wideo?</h4>
+                        <div class="quiz-options">
+                            <input type="radio" id="q13a" name="q13" value="a">
+                            <label for="q13a">Opis tego, co ma się znaleźć w filmie.</label>
+                            <input type="radio" id="q13b" name="q13" value="b">
+                            <label for="q13b">Opis tego, czego nie chcemy, aby było generowane w filmie.</label>
+                            <input type="radio" id="q13c" name="q13" value="c">
+                            <label for="q13c">Sposób na zwiększenie kosztów generowania wideo.</label>
+                            <input type="radio" id="q13d" name="q13" value="d">
+                            <label for="q13d">Opis akcji, która ma się dziać w filmie.</label>
+                        </div>
+                    </div>
+
+                    <div class="quiz-question" id="q14">
+                        <h4>14. Jaka jest główna korzyść z wykorzystania AI w tworzeniu treści wizualnych w kontekście budowania marki?</h4>
+                        <div class="quiz-options">
+                            <input type="radio" id="q14a" name="q14" value="a">
+                            <label for="q14a">Pozwala na tworzenie przypadkowych, niespójnych grafik.</label>
+                            <input type="radio" id="q14b" name="q14" value="b">
+                            <label for="q14b">Pomaga utrzymać spójność wizualną we wszystkich kanałach marketingowych.</label>
+                            <input type="radio" id="q14c" name="q14" value="c">
+                            <label for="q14c">Umożliwia generowanie treści tylko dla jednej platformy.</label>
+                            <input type="radio" id="q14d" name="q14" value="d">
+                            <label for="q14d">Zastępuje ludzką kreatywność.</label>
+                        </div>
+                    </div>
+
+                    <div class="quiz-question" id="q15">
+                        <h4>15. Co jest głównym celem narzędzia Video-to-Video?</h4>
+                        <div class="quiz-options">
+                            <input type="radio" id="q15a" name="q15" value="a">
+                            <label for="q15a">Generowanie całkowicie nowych filmów od podstaw.</label>
+                            <input type="radio" id="q15b" name="q15" value="b">
+                            <label for="q15b">Modyfikacja gotowych nagrań, np. zmiana stylu lub formatu, przy zachowaniu dynamiki ruchu.</label>
+                            <input type="radio" id="q15c" name="q15" value="c">
+                            <label for="q15c">Generowanie napisów do filmów.</label>
+                            <input type="radio" id="q15d" name="q15" value="d">
+                            <label for="q15d">Automatyczne usuwanie postaci z filmów.</label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="quiz-submit" id="submit-quiz" disabled>Sprawdź wiedzę</button>
+                    <div id="quiz-result"></div>
+                    <div id="cat-image-container"></div>
+                </form>
+            </div>
+            
+            <button id="download-pdf-btn">Pobierz PDF</button>
+
+        </main>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const landingPage = document.getElementById('landing-page');
+        const mainContainer = document.getElementById('main-container');
+        const startBtn = document.getElementById('start-btn');
